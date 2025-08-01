@@ -29,6 +29,9 @@ class VideoFeedContainer<T extends FeedItem> extends StatefulWidget {
   final PageController? pageController;
   final Function(int)? onPageChanged;
   final double preloadThreshold;
+  final BoxFit? fit;
+  final bool preserveAspectRatio;
+  final bool tapToMute;
 
   const VideoFeedContainer({
     super.key,
@@ -50,6 +53,9 @@ class VideoFeedContainer<T extends FeedItem> extends StatefulWidget {
     this.pageController,
     this.onPageChanged,
     this.preloadThreshold = 0.8,
+    this.fit,
+    this.preserveAspectRatio = true,
+    this.tapToMute = true,
   });
 
   @override
@@ -205,6 +211,9 @@ class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContai
       muted: _globalMuted,
       onMuteToggle: _onGlobalMuteToggle,
       customBuilder: widget.itemBuilder,
+      fit: widget.fit,
+      preserveAspectRatio: widget.preserveAspectRatio,
+      tapToMute: widget.tapToMute,
     );
   }
 
@@ -221,7 +230,9 @@ class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContai
           return _buildLoadingState();
         }
 
-        if (widget.dataProvider.items.isEmpty && !widget.dataProvider.isLoading) {
+        if (widget.dataProvider.items.isEmpty && 
+            !widget.dataProvider.isLoading && 
+            !widget.dataProvider.hasError) {
           return _buildEmptyState();
         }
 

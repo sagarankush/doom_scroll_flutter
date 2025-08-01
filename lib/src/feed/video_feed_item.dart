@@ -5,6 +5,7 @@ import '../overlays/video_controls_overlay.dart';
 import '../overlays/video_info_overlay.dart';
 import '../overlays/video_actions_overlay.dart';
 import '../overlays/video_loading_overlay.dart';
+import '../theme/doom_scroll_theme.dart';
 import 'feed_data_provider.dart';
 
 typedef VideoFeedItemBuilder<T extends FeedItem> = Widget Function(
@@ -31,6 +32,9 @@ class VideoFeedItem<T extends FeedItem> extends StatefulWidget {
   final double? customWidth;
   final double? customHeight;
   final EdgeInsets? customPadding;
+  final BoxFit? fit;
+  final bool preserveAspectRatio;
+  final bool tapToMute;
 
   const VideoFeedItem({
     super.key,
@@ -51,6 +55,9 @@ class VideoFeedItem<T extends FeedItem> extends StatefulWidget {
     this.customWidth,
     this.customHeight,
     this.customPadding,
+    this.fit,
+    this.preserveAspectRatio = true,
+    this.tapToMute = true,
   });
 
   @override
@@ -60,6 +67,7 @@ class VideoFeedItem<T extends FeedItem> extends StatefulWidget {
 class _VideoFeedItemState<T extends FeedItem> extends State<VideoFeedItem<T>> {
   VideoPlayerState _playerState = const VideoPlayerState();
   bool _localMuted = true;
+  bool _showMuteIndicator = false;
 
   @override
   void initState() {
@@ -85,18 +93,31 @@ class _VideoFeedItemState<T extends FeedItem> extends State<VideoFeedItem<T>> {
         if (mounted) {
           setState(() {
             _localMuted = !_localMuted;
+            _showMuteIndicator = true;
           });
           widget.onMuteToggle?.call();
+          
+          // Hide indicator after a delay
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted) {
+              setState(() {
+                _showMuteIndicator = false;
+              });
+            }
+          });
         }
       });
     }
   }
 
+
   Widget _buildDefaultLayout() {
-    return Container(
+    final doomColors = context.doomScrollTheme.colors;
+    
+    Widget layout = Container(
       width: double.infinity,
       height: double.infinity,
-      color: Theme.of(context).colorScheme.surface,
+      color: doomColors.surface,
       child: Stack(
         children: [
           // Video Player
@@ -126,13 +147,18 @@ class _VideoFeedItemState<T extends FeedItem> extends State<VideoFeedItem<T>> {
               child: VideoControlsOverlay(
                 isMuted: _localMuted,
                 isPlaying: _playerState.isPlaying,
-                onMuteToggle: _onMuteToggle,
+                showMuteIndicator: _showMuteIndicator,
               ),
             ),
 
           // Info Overlay
           if (widget.showInfo && widget.infoData != null)
-            VideoInfoOverlay(info: widget.infoData!),
+            VideoInfoOverlay(
+              info: widget.infoData!,
+              rightPadding: (widget.showActions && widget.actions != null && widget.actions!.isNotEmpty) 
+                  ? 80.0 // Space for action buttons
+                  : 16.0, // Normal padding
+            ),
 
           // Actions Overlay
           if (widget.showActions && widget.actions != null)
@@ -140,6 +166,16 @@ class _VideoFeedItemState<T extends FeedItem> extends State<VideoFeedItem<T>> {
         ],
       ),
     );
+
+    // Add tap gesture detector if tapToMute is enabled
+    if (widget.tapToMute) {
+      layout = GestureDetector(
+        onTap: _onMuteToggle,
+        child: layout,
+      );
+    }
+
+    return layout;
   }
 
   Widget _buildVideoPlayerPositioned() {
@@ -154,6 +190,8 @@ class _VideoFeedItemState<T extends FeedItem> extends State<VideoFeedItem<T>> {
       loadingWidget: widget.loadingWidget,
       errorWidget: widget.errorWidget,
     );
+
+    // Handle aspect ratio preservation with BoxFit (removed - causes layout issues)
 
     // Apply custom dimensions
     if (widget.customWidth != null || widget.customHeight != null) {
@@ -177,6 +215,15 @@ class _VideoFeedItemState<T extends FeedItem> extends State<VideoFeedItem<T>> {
       );
     }
 
+    // If preserveAspectRatio is true and no custom dimensions, use Center without FittedBox
+    if (widget.preserveAspectRatio && 
+        widget.customWidth == null && 
+        widget.customHeight == null && 
+        widget.customAspectRatio == null &&
+        widget.customPadding == null) {
+      return Center(child: videoPlayer);
+    }
+
     // If custom dimensions are specified, center the video
     if (widget.customWidth != null || 
         widget.customHeight != null || 
@@ -185,7 +232,7 @@ class _VideoFeedItemState<T extends FeedItem> extends State<VideoFeedItem<T>> {
       return Center(child: videoPlayer);
     }
 
-    // Otherwise, use full screen
+    // Legacy behavior: use full screen (may stretch)
     return Positioned.fill(child: videoPlayer);
   }
 

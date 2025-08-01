@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import '../theme/doom_scroll_theme.dart';
 
-class VideoControlsOverlay extends StatelessWidget {
+class VideoControlsOverlay extends StatefulWidget {
   final bool isMuted;
   final bool isPlaying;
-  final bool showPlayButton;
-  final VoidCallback? onPlayPause;
-  final VoidCallback? onMuteToggle;
+  final bool showMuteIndicator;
   final Color? iconColor;
   final double? iconSize;
   final EdgeInsets? padding;
@@ -14,42 +13,77 @@ class VideoControlsOverlay extends StatelessWidget {
     super.key,
     this.isMuted = true,
     this.isPlaying = false,
-    this.showPlayButton = false,
-    this.onPlayPause,
-    this.onMuteToggle,
+    this.showMuteIndicator = false,
     this.iconColor,
-    this.iconSize = 24,
-    this.padding = const EdgeInsets.all(8),
+    this.iconSize = 32,
+    this.padding = const EdgeInsets.all(12),
   });
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required VoidCallback? onTap,
-    Color? backgroundColor,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: backgroundColor ?? Colors.black.withValues(alpha: 0.25),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 3,
-              ),
-            ],
+  @override
+  State<VideoControlsOverlay> createState() => _VideoControlsOverlayState();
+}
+
+class _VideoControlsOverlayState extends State<VideoControlsOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(VideoControlsOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showMuteIndicator && !oldWidget.showMuteIndicator) {
+      _animationController.forward().then((_) {
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            _animationController.reverse();
+          }
+        });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildMuteIndicator(BuildContext context) {
+    final doomTheme = context.doomScrollTheme.controlsTheme;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: doomTheme.backgroundColor,
+        borderRadius: doomTheme.borderRadius,
+        boxShadow: doomTheme.shadows,
+      ),
+      padding: widget.padding ?? doomTheme.padding,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            widget.isMuted ? Icons.volume_off : Icons.volume_up,
+            color: widget.iconColor ?? doomTheme.iconColor,
+            size: widget.iconSize ?? doomTheme.iconSize,
           ),
-          padding: padding,
-          child: Icon(
-            icon,
-            color: iconColor ?? Colors.white,
-            size: iconSize,
+          const SizedBox(width: 8),
+          Text(
+            widget.isMuted ? 'Muted' : 'Unmuted',
+            style: doomTheme.textStyle,
           ),
-        ),
+        ],
       ),
     );
   }
@@ -58,24 +92,12 @@ class VideoControlsOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Mute/Unmute button (bottom left)
-        if (onMuteToggle != null)
-          Positioned(
-            left: 8,
-            bottom: 8,
-            child: _buildControlButton(
-              icon: isMuted ? Icons.volume_off : Icons.volume_up,
-              onTap: onMuteToggle,
-            ),
-          ),
-
-        // Play/Pause button (center)
-        if (showPlayButton && onPlayPause != null)
+        // Mute/Unmute indicator (center)
+        if (widget.showMuteIndicator)
           Center(
-            child: _buildControlButton(
-              icon: isPlaying ? Icons.pause : Icons.play_arrow,
-              onTap: onPlayPause,
-              backgroundColor: Colors.black.withValues(alpha: 0.4),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: _buildMuteIndicator(context),
             ),
           ),
       ],

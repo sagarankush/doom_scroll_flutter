@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/doom_scroll_theme.dart';
 
 class VideoInfoData {
   final String title;
@@ -25,11 +26,12 @@ class VideoInfoOverlay extends StatelessWidget {
   final TextStyle? descriptionStyle;
   final Color? backgroundColor;
   final bool showGradient;
+  final double? rightPadding;
 
   const VideoInfoOverlay({
     super.key,
     required this.info,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(2),
     this.maxWidth,
     this.maxTitleLines = 3,
     this.maxDescriptionLines = 2,
@@ -37,49 +39,50 @@ class VideoInfoOverlay extends StatelessWidget {
     this.subtitleStyle,
     this.descriptionStyle,
     this.backgroundColor,
-    this.showGradient = true,
+    this.showGradient = false,
+    this.rightPadding,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final doomTheme = context.doomScrollTheme.infoTheme;
     final screenWidth = MediaQuery.of(context).size.width;
-    final infoWidth = maxWidth ?? screenWidth * 0.6;
+    final actionButtonsWidth = rightPadding ?? 16; // Space to reserve for action buttons
+    final availableWidth = screenWidth - (padding?.left ?? 16) - actionButtonsWidth;
+    final infoWidth = maxWidth ?? (availableWidth * 0.75).clamp(200.0, availableWidth);
 
     return Positioned(
       left: padding?.left ?? 16,
       bottom: padding?.bottom ?? 32,
-      right: padding?.right ?? 16,
+      right: padding?.right ?? 16, // Keep full width for gradient
       child: Container(
-        decoration: showGradient
+        decoration: (showGradient || doomTheme.showGradient)
             ? BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    backgroundColor ?? Colors.black.withValues(alpha: 0.7),
-                    Colors.transparent,
+                    backgroundColor ?? doomTheme.gradientStartColor,
+                    doomTheme.gradientEndColor,
                   ],
                 ),
               )
             : null,
         child: Padding(
-          padding: EdgeInsets.all(showGradient ? 16 : 0),
-          child: SizedBox(
-            width: infoWidth,
-            child: Column(
+          padding: padding ?? doomTheme.padding,
+          child: Align(
+            alignment: Alignment.bottomLeft,
+            child: SizedBox(
+              width: infoWidth,
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Title
                 Text(
                   info.title,
-                  style: titleStyle ??
-                      theme.textTheme.titleMedium?.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+                  style: titleStyle ?? doomTheme.titleStyle,
                   maxLines: maxTitleLines,
                   overflow: TextOverflow.ellipsis,
                   softWrap: true,
@@ -90,12 +93,7 @@ class VideoInfoOverlay extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     info.subtitle!,
-                    style: subtitleStyle ??
-                        theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.secondary,
-                        ),
+                    style: subtitleStyle ?? doomTheme.subtitleStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -106,11 +104,7 @@ class VideoInfoOverlay extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     info.description!,
-                    style: descriptionStyle ??
-                        theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
+                    style: descriptionStyle ?? doomTheme.descriptionStyle,
                     maxLines: maxDescriptionLines,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -130,21 +124,19 @@ class VideoInfoOverlay extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
+                                color: doomTheme.tagBackgroundColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 '#$tag',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
+                                style: doomTheme.tagStyle,
                               ),
                             ))
                         .toList(),
                   ),
                 ],
-              ],
+                ],
+              ),
             ),
           ),
         ),

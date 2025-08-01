@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'feed/feed_data_provider.dart';
 import 'feed/video_feed_container.dart';
 import 'feed/video_feed_item.dart';
+import 'theme/doom_scroll_theme.dart';
+import 'theme/doom_scroll_theme_data.dart';
 
 /// Main convenience widget that combines all DoomScroll video player functionality.
 /// 
@@ -52,6 +54,18 @@ class DoomScrollVideoPlayer<T extends FeedItem> extends StatelessWidget {
   
   /// Callback when page changes (video scrolls)
   final Function(int)? onPageChanged;
+  
+  /// How to fit the video within its container
+  final BoxFit? fit;
+  
+  /// Whether to preserve video aspect ratio (prevents stretching)
+  final bool preserveAspectRatio;
+  
+  /// Whether tapping on video toggles mute/unmute
+  final bool tapToMute;
+  
+  /// Custom theme for the video player
+  final DoomScrollThemeData? theme;
 
   const DoomScrollVideoPlayer({
     super.key,
@@ -66,11 +80,15 @@ class DoomScrollVideoPlayer<T extends FeedItem> extends StatelessWidget {
     this.showInfo = true,
     this.showActions = true,
     this.onPageChanged,
+    this.fit,
+    this.preserveAspectRatio = true,
+    this.tapToMute = true,
+    this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
-    return VideoFeedContainer<T>(
+    final widget = VideoFeedContainer<T>(
       dataProvider: dataProvider,
       infoBuilder: infoBuilder,
       actionsBuilder: actionsBuilder,
@@ -82,6 +100,19 @@ class DoomScrollVideoPlayer<T extends FeedItem> extends StatelessWidget {
       showInfo: showInfo,
       showActions: showActions,
       onPageChanged: onPageChanged,
+      fit: fit,
+      preserveAspectRatio: preserveAspectRatio,
+      tapToMute: tapToMute,
     );
+
+    // Wrap with theme if provided
+    if (theme != null) {
+      return DoomScrollTheme(
+        data: theme!,
+        child: widget,
+      );
+    }
+
+    return widget;
   }
 }

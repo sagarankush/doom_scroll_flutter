@@ -54,6 +54,8 @@ class _BaseVideoPlayerState extends State<BaseVideoPlayer> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoUrl != widget.videoUrl) {
       _initializeVideo();
+    } else if (oldWidget.muted != widget.muted) {
+      _controllerManager.setMuted(widget.muted);
     }
   }
 

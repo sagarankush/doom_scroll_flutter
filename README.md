@@ -8,9 +8,10 @@ A highly modular, customizable TikTok-like video player for Flutter applications
 
 - 🎥 **Vertical scrolling video feed** (TikTok/Instagram Reels style)
 - ⚡ **Auto-play with visibility detection**
-- 🔇 **Mute/unmute controls**
-- 📱 **Fully responsive and customizable dimensions**
-- 🎨 **Rich overlay system** (info, controls, actions)
+- 🔇 **Tap-to-mute with visual feedback** (configurable)
+- 📱 **Aspect ratio preservation** (prevents video stretching)
+- 🎨 **Comprehensive theming system** (light/dark themes + full customization)
+- 🎯 **Flexible video fitting** (contain, cover, fill options)
 - 🏗️ **Highly modular architecture**
 - 🔧 **Comprehensive error handling**
 - 📊 **Built-in loading and error states**
@@ -81,25 +82,46 @@ class VideoFeedPage extends StatelessWidget {
 }
 ```
 
-### 2. Custom Dimensions
+### 2. Aspect Ratio & Tap Controls
 
 ```dart
 DoomScrollVideoPlayer<MyVideoItem>(
   dataProvider: dataProvider,
   
-  // Square videos (Instagram-like)
-  itemBuilder: (context, item, state) => VideoFeedItem(
-    item: item,
-    customAspectRatio: 1.0,
-    customPadding: EdgeInsets.all(16),
-  ),
+  // Preserve aspect ratio (prevents stretching)
+  preserveAspectRatio: true,
+  fit: BoxFit.contain, // or BoxFit.cover, BoxFit.fill
   
-  // Or use specific dimensions
+  // Tap to mute/unmute (with visual indicator)
+  tapToMute: true,
+  
+  // Custom aspect ratio
   itemBuilder: (context, item, state) => VideoFeedItem(
     item: item,
-    customWidth: 300,
-    customHeight: 400,
-    customPadding: EdgeInsets.symmetric(horizontal: 20),
+    customAspectRatio: 16/9, // Force specific aspect ratio
+  ),
+)
+```
+
+### 3. Theming
+
+```dart
+DoomScrollVideoPlayer<MyVideoItem>(
+  dataProvider: dataProvider,
+  
+  // Use built-in themes
+  theme: DoomScrollThemeData.dark(),
+  
+  // Or customize
+  theme: DoomScrollThemeData.light().copyWith(
+    infoTheme: VideoInfoTheme.light().copyWith(
+      titleStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      showGradient: false,
+    ),
+    actionsTheme: VideoActionsTheme.light().copyWith(
+      defaultIconColor: Colors.blue,
+      activeIconColor: Colors.red,
+    ),
   ),
 )
 ```
@@ -117,8 +139,10 @@ DoomScrollVideoPlayer<MyVideoItem>(
 
 - **[Getting Started](doc/getting_started.md)** - Complete setup guide
 - **[Custom Dimensions](doc/custom_dimensions.md)** - Video sizing options
+- **[Aspect Ratio Control](doc/aspect_ratio_control.md)** - Preventing video stretching
+- **[Tap-to-Mute](doc/tap_to_mute.md)** - Configurable mute controls
+- **[Theming System](doc/theming_system.md)** - Complete theming guide
 - **[Data Providers](doc/data_providers.md)** - Managing video data
-- **[Customization](doc/customization.md)** - Theming and styling
 - **[Advanced Usage](doc/advanced_usage.md)** - Complex implementations
 
 ### Examples
@@ -144,11 +168,14 @@ doom_scroll_flutter/
 │   │   ├── video_info_overlay.dart
 │   │   ├── video_actions_overlay.dart
 │   │   └── video_loading_overlay.dart
-│   └── feed/                 # Feed management
-│       ├── feed_data_provider.dart
-│       ├── video_feed_item.dart
-│       └── video_feed_container.dart
-└── tiktok_video_player.dart  # Main export file
+│   ├── feed/                 # Feed management
+│   │   ├── feed_data_provider.dart
+│   │   ├── video_feed_item.dart
+│   │   └── video_feed_container.dart
+│   └── theme/                # Theming system
+│       ├── doom_scroll_theme.dart
+│       └── doom_scroll_theme_data.dart
+└── doom_scroll_video_player.dart  # Main export file
 ```
 
 ## 🎯 Key Features
@@ -179,37 +206,66 @@ DoomScrollVideoPlayer<YourVideoModel>(...)
 
 ## 🔧 Configuration Options
 
-### Video Dimensions
+### Aspect Ratio & Video Fitting
 ```dart
-// Aspect ratio based
-VideoFeedItem(customAspectRatio: 16/9)
-
-// Fixed dimensions  
-VideoFeedItem(customWidth: 300, customHeight: 400)
-
-// Responsive
-VideoFeedItem(
-  customWidth: MediaQuery.of(context).size.width * 0.8,
-  customHeight: MediaQuery.of(context).size.height * 0.6,
+DoomScrollVideoPlayer(
+  // Preserve original aspect ratio (prevents stretching)
+  preserveAspectRatio: true,
+  
+  // Control how video fits in container
+  fit: BoxFit.contain,    // Show full video with letterboxing
+  fit: BoxFit.cover,      // Fill container, crop if needed
+  fit: BoxFit.fill,       // Stretch to fill (may distort)
+  
+  // Force specific aspect ratio
+  itemBuilder: (context, item, state) => VideoFeedItem(
+    customAspectRatio: 16/9,     // Widescreen
+    customAspectRatio: 9/16,     // Portrait (TikTok style)
+    customAspectRatio: 1,        // Square (Instagram style)
+  ),
 )
 ```
 
-### Overlays
+### Tap-to-Mute Controls
 ```dart
-// Info overlay
-VideoInfoData(
-  title: "Video Title",
-  subtitle: "Creator Name", 
-  description: "Video description",
-  tags: ["tag1", "tag2"],
+DoomScrollVideoPlayer(
+  tapToMute: true,         // Enable tap-to-mute (default: true)
+  tapToMute: false,        // Disable tap-to-mute
+  
+  // Mute indicator shows automatically on tap
+  // - Displays "Muted" or "Unmuted" with icon
+  // - Auto-hides after 1.2 seconds
+  // - Fully themed and customizable
+)
+```
+
+### Theming System
+```dart
+// Built-in themes
+DoomScrollVideoPlayer(
+  theme: DoomScrollThemeData.light(),
+  theme: DoomScrollThemeData.dark(),
 )
 
-// Action buttons
-[
-  VideoActionData(icon: Icons.favorite, onTap: () => like()),
-  VideoActionData(icon: Icons.share, onTap: () => share()),
-  VideoActionData(icon: Icons.comment, onTap: () => comment()),
-]
+// Custom themes
+DoomScrollVideoPlayer(
+  theme: DoomScrollThemeData.dark().copyWith(
+    infoTheme: VideoInfoTheme(
+      titleStyle: TextStyle(fontSize: 18, color: Colors.white),
+      showGradient: true,
+      gradientStartColor: Colors.black.withOpacity(0.7),
+    ),
+    actionsTheme: VideoActionsTheme(
+      defaultIconColor: Colors.white,
+      activeIconColor: Colors.red,
+      backgroundColor: Colors.transparent,
+    ),
+    controlsTheme: VideoControlsTheme(
+      backgroundColor: Colors.black87,
+      iconColor: Colors.white,
+    ),
+  ),
+)
 ```
 
 ### Feed Behavior

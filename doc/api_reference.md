@@ -27,16 +27,34 @@ class DoomScrollVideoPlayer<T extends FeedItem> extends StatelessWidget
 | `showInfo` | `bool` | true | Whether to show info overlay |
 | `showActions` | `bool` | true | Whether to show action buttons |
 | `onPageChanged` | `Function(int)?` | null | Callback when page/video changes |
+| `fit` | `BoxFit?` | null | How video fits within container |
+| `preserveAspectRatio` | `bool` | true | Whether to preserve video aspect ratio |
+| `tapToMute` | `bool` | true | Whether tapping video toggles mute |
+| `theme` | `DoomScrollThemeData?` | null | Custom theme for styling |
 
 #### Example
 
 ```dart
 DoomScrollVideoPlayer<MyVideoItem>(
   dataProvider: myDataProvider,
+  
+  // Aspect ratio and fitting
+  preserveAspectRatio: true,
+  fit: BoxFit.contain,
+  
+  // Tap controls
+  tapToMute: true,
+  
+  // Theming
+  theme: DoomScrollThemeData.dark(),
+  
+  // Content builders
   infoBuilder: (item) => VideoInfoData(title: item.title),
   actionsBuilder: (item) => [
     VideoActionData(icon: Icons.favorite, onTap: () => like(item)),
   ],
+  
+  // Events
   onPageChanged: (index) => print('Video $index'),
 )
 ```
@@ -240,18 +258,16 @@ typedef FeedEmptyBuilder = Widget Function(BuildContext context);
 
 ### VideoControlsOverlay
 
-Displays video control buttons (mute/unmute, play/pause).
+Displays mute/unmute indicator with animation.
 
 ```dart
 VideoControlsOverlay({
   bool isMuted = true,               // Current mute state
   bool isPlaying = false,            // Current play state
-  bool showPlayButton = false,       // Whether to show play button
-  VoidCallback? onPlayPause,         // Play/pause callback
-  VoidCallback? onMuteToggle,        // Mute toggle callback
-  Color? iconColor,                  // Icon color
-  double? iconSize = 24,             // Icon size
-  EdgeInsets? padding,               // Button padding
+  bool showMuteIndicator = false,    // Whether to show mute indicator
+  Color? iconColor,                  // Icon color override
+  double? iconSize = 32,             // Icon size override
+  EdgeInsets? padding,               // Padding override
 })
 ```
 
@@ -328,4 +344,190 @@ const double ASPECT_RATIO_INSTAGRAM = 1.0;       // 1.0
 const double ASPECT_RATIO_YOUTUBE = 16 / 9;      // 1.7778
 const double ASPECT_RATIO_STORIES = 9 / 16;      // 0.5625
 const double ASPECT_RATIO_SQUARE = 1.0;          // 1.0
+```
+
+---
+
+## Theming System
+
+### DoomScrollThemeData
+
+Main theme configuration class.
+
+```dart
+class DoomScrollThemeData {
+  const DoomScrollThemeData({
+    required this.infoTheme,
+    required this.actionsTheme,
+    required this.controlsTheme,
+    required this.colors,
+  });
+  
+  // Factory constructors
+  factory DoomScrollThemeData.light();
+  factory DoomScrollThemeData.dark();
+  
+  // Copy with modifications
+  DoomScrollThemeData copyWith({
+    VideoInfoTheme? infoTheme,
+    VideoActionsTheme? actionsTheme,
+    VideoControlsTheme? controlsTheme,
+    DoomScrollColors? colors,
+  });
+}
+```
+
+### VideoInfoTheme
+
+Theme for video information overlay.
+
+```dart
+class VideoInfoTheme {
+  const VideoInfoTheme({
+    required this.titleStyle,          // Title text style
+    required this.subtitleStyle,       // Subtitle text style
+    required this.descriptionStyle,    // Description text style
+    required this.tagStyle,            // Tag text style
+    required this.gradientStartColor,  // Gradient start color
+    required this.gradientEndColor,    // Gradient end color
+    required this.tagBackgroundColor,  // Tag background color
+    required this.padding,             // Content padding
+    required this.showGradient,        // Whether to show gradient
+  });
+  
+  factory VideoInfoTheme.light();
+  factory VideoInfoTheme.dark();
+  
+  VideoInfoTheme copyWith({...});
+}
+```
+
+### VideoActionsTheme
+
+Theme for action buttons overlay.
+
+```dart
+class VideoActionsTheme {
+  const VideoActionsTheme({
+    required this.defaultIconColor,    // Default icon color
+    required this.activeIconColor,     // Active icon color
+    required this.backgroundColor,     // Button background color
+    required this.labelStyle,          // Label text style
+    required this.iconSize,            // Icon size
+    required this.spacing,             // Spacing between buttons
+    required this.padding,             // Overlay padding
+    required this.buttonPadding,       // Individual button padding
+  });
+  
+  factory VideoActionsTheme.light();
+  factory VideoActionsTheme.dark();
+  
+  VideoActionsTheme copyWith({...});
+}
+```
+
+### VideoControlsTheme
+
+Theme for mute indicator.
+
+```dart
+class VideoControlsTheme {
+  const VideoControlsTheme({
+    required this.iconColor,          // Icon color
+    required this.backgroundColor,    // Background color
+    required this.textStyle,          // Text style
+    required this.iconSize,           // Icon size
+    required this.padding,            // Content padding
+    required this.borderRadius,       // Border radius
+    required this.shadows,            // Box shadows
+  });
+  
+  factory VideoControlsTheme.light();
+  factory VideoControlsTheme.dark();
+  
+  VideoControlsTheme copyWith({...});
+}
+```
+
+### DoomScrollColors
+
+General color scheme.
+
+```dart
+class DoomScrollColors {
+  const DoomScrollColors({
+    required this.surface,            // Surface color
+    required this.onSurface,          // Text on surface
+    required this.error,              // Error color
+    required this.onError,            // Text on error
+    required this.loading,            // Loading indicator color
+  });
+  
+  factory DoomScrollColors.light();
+  factory DoomScrollColors.dark();
+  
+  DoomScrollColors copyWith({...});
+}
+```
+
+### DoomScrollTheme
+
+Inherited widget for providing theme data.
+
+```dart
+class DoomScrollTheme extends InheritedWidget {
+  const DoomScrollTheme({
+    super.key,
+    required this.data,
+    required super.child,
+  });
+  
+  // Get theme from context
+  static DoomScrollThemeData of(BuildContext context);
+  static DoomScrollThemeData? maybeOf(BuildContext context);
+}
+
+// Extension for easy access
+extension DoomScrollThemeExtension on BuildContext {
+  DoomScrollThemeData get doomScrollTheme;
+}
+```
+
+### Usage Examples
+
+```dart
+// Built-in themes
+DoomScrollVideoPlayer(
+  theme: DoomScrollThemeData.dark(),
+)
+
+// Custom theme
+DoomScrollVideoPlayer(
+  theme: DoomScrollThemeData.dark().copyWith(
+    infoTheme: VideoInfoTheme.dark().copyWith(
+      titleStyle: TextStyle(fontSize: 20),
+    ),
+  ),
+)
+
+// Global theme
+DoomScrollTheme(
+  data: DoomScrollThemeData.dark(),
+  child: MyApp(),
+)
+
+// Access theme in custom widgets
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.doomScrollTheme;
+    return Container(
+      color: theme.colors.surface,
+      child: Text(
+        'Hello',
+        style: theme.infoTheme.titleStyle,
+      ),
+    );
+  }
+}
 ```

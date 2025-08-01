@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/doom_scroll_theme.dart';
 
 class VideoActionData {
   final IconData icon;
@@ -38,9 +39,10 @@ class VideoActionsOverlay extends StatelessWidget {
 
   Widget _buildActionButton(BuildContext context, VideoActionData action) {
     final theme = Theme.of(context);
+    final doomTheme = context.doomScrollTheme.actionsTheme;
     final iconColor = action.isActive
-        ? (activeIconColor ?? theme.colorScheme.primary)
-        : (action.color ?? defaultIconColor ?? Colors.white);
+        ? (activeIconColor ?? doomTheme.activeIconColor)
+        : (action.color ?? defaultIconColor ?? doomTheme.defaultIconColor);
 
     return Material(
       color: Colors.transparent,
@@ -48,24 +50,24 @@ class VideoActionsOverlay extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: action.onTap,
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: padding ?? doomTheme.buttonPadding,
+          decoration: BoxDecoration(
+            color: doomTheme.backgroundColor,
+            borderRadius: BorderRadius.circular(24),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 action.icon,
                 color: iconColor,
-                size: iconSize,
+                size: iconSize ?? doomTheme.iconSize,
               ),
               if (action.label != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   action.label!,
-                  style: labelStyle ??
-                      theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
+                  style: labelStyle ?? doomTheme.labelStyle,
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -79,15 +81,17 @@ class VideoActionsOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (actions.isEmpty) return const SizedBox.shrink();
+    
+    final doomTheme = context.doomScrollTheme.actionsTheme;
 
     return Positioned(
-      right: padding?.right ?? 16,
-      bottom: padding?.bottom ?? 48,
+      right: (padding ?? doomTheme.padding).right,
+      bottom: (padding ?? doomTheme.padding).bottom,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: actions
             .map((action) => Padding(
-                  padding: EdgeInsets.only(bottom: spacing),
+                  padding: EdgeInsets.only(bottom: spacing ?? doomTheme.spacing),
                   child: _buildActionButton(context, action),
                 ))
             .toList(),
