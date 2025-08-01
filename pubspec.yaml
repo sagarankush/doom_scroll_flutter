@@ -1,0 +1,23 @@
+name: doom_scroll_flutter
+description: A highly modular, customizable TikTok-like video player for Flutter apps with vertical scrolling, auto-play, and rich overlay support. Perfect for creating engaging video feeds.
+version: 1.0.0
+homepage: https://github.com/your-username/doom_scroll_flutter
+repository: https://github.com/your-username/doom_scroll_flutter
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  video_player: ^2.8.2
+  visibility_detector: ^0.4.0+2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  # No assets or fonts needed for core package

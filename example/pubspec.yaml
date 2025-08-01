@@ -1,0 +1,22 @@
+name: doom_scroll_flutter_example
+description: Example app demonstrating doom_scroll_flutter package usage.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  doom_scroll_flutter:
+    path: ../
+  http: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
