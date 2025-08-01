@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:doom_scroll_flutter/doom_scroll_flutter.dart';
 
@@ -427,6 +428,103 @@ void main() {
       expect(exception.url, 'https://example.com');
       expect(exception.toString(), contains('Test error'));
       expect(exception.toString(), contains('https://example.com'));
+    });
+  });
+
+  group('DoomScrollAccessibilityConfig', () {
+    test('should create default config', () {
+      const config = DoomScrollAccessibilityConfig.defaultConfig;
+      
+      expect(config.announceStateChanges, true);
+      expect(config.enableSemanticLabels, true);
+      expect(config.enableKeyboardNavigation, true);
+      expect(config.enableDetailedDescriptions, true);
+      expect(config.announceProgressUpdates, false);
+      expect(config.languageCode, 'en');
+    });
+
+    test('should create high accessibility config', () {
+      const config = DoomScrollAccessibilityConfig.highAccessibility;
+      
+      expect(config.announceStateChanges, true);
+      expect(config.enableSemanticLabels, true);
+      expect(config.enableKeyboardNavigation, true);
+      expect(config.enableDetailedDescriptions, true);
+      expect(config.announceProgressUpdates, true);
+      expect(config.progressAnnouncementInterval, 15);
+    });
+
+    test('should create minimal config', () {
+      const config = DoomScrollAccessibilityConfig.minimal;
+      
+      expect(config.announceStateChanges, false);
+      expect(config.enableSemanticLabels, true);
+      expect(config.enableKeyboardNavigation, false);
+      expect(config.enableDetailedDescriptions, false);
+      expect(config.announceProgressUpdates, false);
+    });
+
+    test('should support copyWith', () {
+      const config = DoomScrollAccessibilityConfig.defaultConfig;
+      final modified = config.copyWith(
+        announceStateChanges: false,
+        languageCode: 'es',
+      );
+      
+      expect(modified.announceStateChanges, false);
+      expect(modified.languageCode, 'es');
+      expect(modified.enableSemanticLabels, true); // unchanged
+    });
+  });
+
+  group('AccessibilityLabels', () {
+    test('should return default labels', () {
+      expect(AccessibilityLabels.getLabel('video_playing'), 'Video is playing');
+      expect(AccessibilityLabels.getLabel('play_video'), 'Play video');
+      expect(AccessibilityLabels.getLabel('unknown_key'), 'unknown_key');
+    });
+
+    test('should use custom labels when provided', () {
+      final customLabels = {'video_playing': 'Video está reproduciendo'};
+      expect(AccessibilityLabels.getLabel('video_playing', customLabels), 'Video está reproduciendo');
+      expect(AccessibilityLabels.getLabel('play_video', customLabels), 'Play video'); // fallback to default
+    });
+
+    test('should generate state announcements', () {
+      final announcement = AccessibilityLabels.getStateAnnouncement(
+        'video_playing',
+        videoTitle: 'Test Video',
+      );
+      expect(announcement, 'Video is playing: Test Video');
+    });
+
+    test('should generate progress announcements', () {
+      final announcement = AccessibilityLabels.getProgressAnnouncement(
+        const Duration(minutes: 1, seconds: 30),
+        const Duration(minutes: 3, seconds: 45),
+      );
+      expect(announcement, contains('1 minutes 30 seconds'));
+      expect(announcement, contains('3 minutes 45 seconds'));
+    });
+  });
+
+  group('AccessibilityKeyboardShortcuts', () {
+    test('should map keys to actions', () {
+      expect(AccessibilityKeyboardShortcuts.getAction(LogicalKeyboardKey.space), 'toggle_play_pause');
+      expect(AccessibilityKeyboardShortcuts.getAction(LogicalKeyboardKey.keyM), 'toggle_mute');
+      expect(AccessibilityKeyboardShortcuts.getAction(LogicalKeyboardKey.pageUp), 'previous_video');
+      expect(AccessibilityKeyboardShortcuts.getAction(LogicalKeyboardKey.pageDown), 'next_video');
+    });
+
+    test('should return null for unmapped keys', () {
+      expect(AccessibilityKeyboardShortcuts.getAction(LogicalKeyboardKey.keyZ), isNull);
+    });
+
+    test('should provide help text', () {
+      final helpText = AccessibilityKeyboardShortcuts.getHelpText();
+      expect(helpText, contains('Space: Play/Pause video'));
+      expect(helpText, contains('M: Mute/Unmute video'));
+      expect(helpText, contains('Page Up/Down: Previous/Next video'));
     });
   });
 }

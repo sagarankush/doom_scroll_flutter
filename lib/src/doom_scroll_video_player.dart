@@ -4,6 +4,7 @@ import 'feed/video_feed_container.dart';
 import 'feed/video_feed_item.dart';
 import 'theme/doom_scroll_theme.dart';
 import 'theme/doom_scroll_theme_data.dart';
+import 'accessibility/accessibility_config.dart';
 
 /// Main convenience widget that combines all DoomScroll video player functionality.
 /// 
@@ -66,6 +67,9 @@ class DoomScrollVideoPlayer<T extends FeedItem> extends StatelessWidget {
   
   /// Custom theme for the video player
   final DoomScrollThemeData? theme;
+  
+  /// Accessibility configuration for the video player
+  final DoomScrollAccessibilityConfig? accessibilityConfig;
 
   const DoomScrollVideoPlayer({
     super.key,
@@ -84,6 +88,7 @@ class DoomScrollVideoPlayer<T extends FeedItem> extends StatelessWidget {
     this.preserveAspectRatio = true,
     this.tapToMute = true,
     this.theme,
+    this.accessibilityConfig,
   });
 
   @override
@@ -103,6 +108,7 @@ class DoomScrollVideoPlayer<T extends FeedItem> extends StatelessWidget {
       fit: fit,
       preserveAspectRatio: preserveAspectRatio,
       tapToMute: tapToMute,
+      accessibilityConfig: accessibilityConfig,
     );
 
     // Wrap with theme if provided

@@ -30,3 +30,7 @@ export 'src/theme/doom_scroll_theme_data.dart';
 // Security utilities
 export 'src/security/url_validator.dart';
 export 'src/security/content_security_policy.dart';
+
+// Accessibility features
+export 'src/accessibility/accessibility_config.dart';
+export 'src/accessibility/keyboard_handler.dart';

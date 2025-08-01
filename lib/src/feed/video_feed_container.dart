@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../overlays/video_info_overlay.dart';
 import '../overlays/video_actions_overlay.dart';
+import '../accessibility/accessibility_config.dart';
+import '../accessibility/keyboard_handler.dart';
 import 'feed_data_provider.dart';
 import 'video_feed_item.dart';
 
@@ -32,6 +34,7 @@ class VideoFeedContainer<T extends FeedItem> extends StatefulWidget {
   final BoxFit? fit;
   final bool preserveAspectRatio;
   final bool tapToMute;
+  final DoomScrollAccessibilityConfig? accessibilityConfig;
 
   const VideoFeedContainer({
     super.key,
@@ -56,15 +59,18 @@ class VideoFeedContainer<T extends FeedItem> extends StatefulWidget {
     this.fit,
     this.preserveAspectRatio = true,
     this.tapToMute = true,
+    this.accessibilityConfig,
   });
 
   @override
   State<VideoFeedContainer<T>> createState() => _VideoFeedContainerState<T>();
 }
 
-class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContainer<T>> {
+class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContainer<T>> 
+    with VideoKeyboardActionHandler {
   late PageController _pageController;
   bool _globalMuted = true;
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -89,6 +95,9 @@ class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContai
   }
 
   void _onPageChanged(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
     widget.onPageChanged?.call(index);
     
     // Load more data when approaching the end
@@ -104,6 +113,61 @@ class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContai
     setState(() {
       _globalMuted = !_globalMuted;
     });
+  }
+
+  void _handleKeyboardAction(String action) {
+    final accessibilityConfig = widget.accessibilityConfig ?? DoomScrollAccessibilityConfig.defaultConfig;
+    
+    handleVideoKeyboardAction(
+      action,
+      onPlayPause: () {
+        // Play/pause current video - implementation depends on video player state
+        // This would need to be connected to the actual video player
+      },
+      onMute: () {
+        _onGlobalMuteToggle();
+        if (accessibilityConfig.announceStateChanges) {
+          // Announce mute state change
+          final announcement = getKeyboardActionAnnouncement(action, accessibilityConfig.customLabels);
+          // In a real implementation, you'd use live region announcements
+        }
+      },
+      onPreviousVideo: () {
+        if (_currentIndex > 0) {
+          _pageController.previousPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      onNextVideo: () {
+        if (_currentIndex < widget.dataProvider.items.length - 1) {
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      onFirstVideo: () {
+        if (_currentIndex != 0) {
+          _pageController.animateToPage(
+            0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      onLastVideo: () {
+        final lastIndex = widget.dataProvider.items.length - 1;
+        if (_currentIndex != lastIndex) {
+          _pageController.animateToPage(
+            lastIndex,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+    );
   }
 
   Widget _buildErrorState() {
@@ -219,7 +283,13 @@ class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContai
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    final accessibilityConfig = widget.accessibilityConfig ?? DoomScrollAccessibilityConfig.defaultConfig;
+    
+    return AccessibleVideoKeyboardHandler(
+      accessibilityConfig: accessibilityConfig,
+      onKeyboardAction: _handleKeyboardAction,
+      autofocus: true,
+      child: ListenableBuilder(
       listenable: widget.dataProvider,
       builder: (context, child) {
         if (widget.dataProvider.hasError && widget.dataProvider.items.isEmpty) {
@@ -251,6 +321,7 @@ class _VideoFeedContainerState<T extends FeedItem> extends State<VideoFeedContai
           },
         );
       },
+      ),
     );
   }
 }
