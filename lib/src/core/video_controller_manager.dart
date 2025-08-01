@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'video_player_state.dart';
+import '../security/url_validator.dart';
+import '../security/content_security_policy.dart';
 
 class VideoControllerManager extends ChangeNotifier {
   VideoPlayerState _state = const VideoPlayerState();
@@ -24,9 +26,21 @@ class VideoControllerManager extends ChangeNotifier {
     try {
       _updateState(_state.copyWith(status: VideoPlayerStatus.loading));
 
+      // Validate and sanitize the video URL
+      final validationResult = VideoUrlValidator.validateUrl(videoUrl);
+      if (!validationResult.isValid) {
+        throw VideoUrlSecurityException(
+          validationResult.errorMessage!,
+          videoUrl,
+        );
+      }
+
+      final sanitizedUrl = VideoUrlValidator.sanitizeUrl(videoUrl);
+      final sanitizedHeaders = ContentSecurityPolicy.sanitizeHeaders(httpHeaders);
+
       _controller = VideoPlayerController.networkUrl(
-        Uri.parse(videoUrl),
-        httpHeaders: httpHeaders ?? {},
+        Uri.parse(sanitizedUrl),
+        httpHeaders: sanitizedHeaders,
       );
 
       await _controller!.initialize();

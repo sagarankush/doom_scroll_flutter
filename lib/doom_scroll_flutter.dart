@@ -26,3 +26,7 @@ export 'src/doom_scroll_video_player.dart';
 // Theming system
 export 'src/theme/doom_scroll_theme.dart';
 export 'src/theme/doom_scroll_theme_data.dart';
+
+// Security utilities
+export 'src/security/url_validator.dart';
+export 'src/security/content_security_policy.dart';

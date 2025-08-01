@@ -271,4 +271,162 @@ void main() {
       expect(provider.errorMessage, isNull);
     });
   });
+
+  group('VideoUrlValidator', () {
+    tearDown(() {
+      // Reset to defaults after each test
+      VideoUrlValidator.enforceHttps = true;
+      VideoUrlValidator.validateVideoExtensions = false;
+      VideoUrlValidator.allowedDomains = {};
+      VideoUrlValidator.blockedDomains = {};
+    });
+
+    test('should validate HTTPS URLs', () {
+      final result = VideoUrlValidator.validateUrl('https://example.com/video.mp4');
+      expect(result.isValid, true);
+    });
+
+    test('should reject HTTP URLs when HTTPS is enforced', () {
+      VideoUrlValidator.enforceHttps = true;
+      final result = VideoUrlValidator.validateUrl('http://example.com/video.mp4');
+      expect(result.isValid, false);
+      expect(result.errorMessage, contains('HTTPS is required'));
+    });
+
+    test('should allow HTTP URLs when HTTPS is not enforced', () {
+      VideoUrlValidator.enforceHttps = false;
+      final result = VideoUrlValidator.validateUrl('http://example.com/video.mp4');
+      expect(result.isValid, true);
+    });
+
+    test('should reject empty URLs', () {
+      final result = VideoUrlValidator.validateUrl('');
+      expect(result.isValid, false);
+      expect(result.errorMessage, contains('cannot be empty'));
+    });
+
+    test('should reject invalid URL formats', () {
+      final result = VideoUrlValidator.validateUrl('not-a-url');
+      expect(result.isValid, false);
+      expect(result.errorMessage, contains('Invalid URL format'));
+    });
+
+    test('should enforce domain allowlist', () {
+      VideoUrlValidator.allowedDomains = {'trusted.com'};
+      
+      final validResult = VideoUrlValidator.validateUrl('https://trusted.com/video.mp4');
+      expect(validResult.isValid, true);
+      
+      final invalidResult = VideoUrlValidator.validateUrl('https://untrusted.com/video.mp4');
+      expect(invalidResult.isValid, false);
+      expect(invalidResult.errorMessage, contains('not in the allowlist'));
+    });
+
+    test('should enforce domain blocklist', () {
+      VideoUrlValidator.blockedDomains = {'blocked.com'};
+      
+      final validResult = VideoUrlValidator.validateUrl('https://safe.com/video.mp4');
+      expect(validResult.isValid, true);
+      
+      final invalidResult = VideoUrlValidator.validateUrl('https://blocked.com/video.mp4');
+      expect(invalidResult.isValid, false);
+      expect(invalidResult.errorMessage, contains('is blocked'));
+    });
+
+    test('should detect suspicious patterns', () {
+      final patterns = [
+        'https://example.com/video.mp4?param=<script>alert("xss")</script>',
+        'https://example.com/javascript:alert("xss")',
+        'https://example.com/video.mp4?onload=malicious()',
+      ];
+
+      for (final pattern in patterns) {
+        final result = VideoUrlValidator.validateUrl(pattern);
+        expect(result.isValid, false, reason: 'Should reject: $pattern');
+        expect(result.errorMessage, contains('suspicious pattern'));
+      }
+    });
+
+    test('should sanitize HTTP to HTTPS', () {
+      VideoUrlValidator.enforceHttps = true;
+      final sanitized = VideoUrlValidator.sanitizeUrl('http://example.com/video.mp4');
+      expect(sanitized, 'https://example.com/video.mp4');
+    });
+  });
+
+  group('ContentSecurityPolicy', () {
+    tearDown(() {
+      // Reset to defaults
+      ContentSecurityPolicy.maxVideoFileSize = 100 * 1024 * 1024;
+      ContentSecurityPolicy.maxVideoDuration = 300;
+      ContentSecurityPolicy.validateContentLength = true;
+      ContentSecurityPolicy.validateMimeType = false;
+      ContentSecurityPolicy.resetRateLimiting();
+    });
+
+    test('should sanitize dangerous headers', () {
+      final headers = {
+        'user-agent': 'TestAgent/1.0',
+        'authorization': 'Bearer secret-token',
+        'cookie': 'session=abc123',
+        'custom-header': 'safe-value',
+        'xss-header': '<script>alert("xss")</script>',
+      };
+
+      final sanitized = ContentSecurityPolicy.sanitizeHeaders(headers);
+      
+      expect(sanitized.containsKey('authorization'), false);
+      expect(sanitized.containsKey('cookie'), false);
+      expect(sanitized['user-agent'], 'TestAgent/1.0');
+      expect(sanitized['custom-header'], 'safe-value');
+      expect(sanitized['xss-header'], 'scriptalert(xss)/script');
+    });
+
+    test('should validate content headers', () async {
+      final headers = {'content-length': '50000000'}; // 50MB
+      final result = await ContentSecurityPolicy.validateVideoHeaders(
+        url: 'https://example.com/video.mp4',
+        headers: headers,
+      );
+      expect(result.isValid, true);
+    });
+
+    test('should reject oversized content', () async {
+      final headers = {'content-length': '200000000'}; // 200MB
+      final result = await ContentSecurityPolicy.validateVideoHeaders(
+        url: 'https://example.com/video.mp4',
+        headers: headers,
+      );
+      expect(result.isValid, false);
+      expect(result.errorMessage, contains('exceeds maximum allowed size'));
+    });
+
+    test('should validate video content', () {
+      final result = ContentSecurityPolicy.validateVideoContent(
+        duration: const Duration(minutes: 2),
+        mimeType: 'video/mp4',
+        fileSize: 50 * 1024 * 1024,
+      );
+      expect(result.isValid, true);
+    });
+
+    test('should reject long videos', () {
+      final result = ContentSecurityPolicy.validateVideoContent(
+        duration: const Duration(minutes: 10),
+        mimeType: 'video/mp4',
+      );
+      expect(result.isValid, false);
+      expect(result.errorMessage, contains('exceeds maximum allowed duration'));
+    });
+  });
+
+  group('VideoUrlSecurityException', () {
+    test('should create exception with message and URL', () {
+      const exception = VideoUrlSecurityException('Test error', 'https://example.com');
+      expect(exception.message, 'Test error');
+      expect(exception.url, 'https://example.com');
+      expect(exception.toString(), contains('Test error'));
+      expect(exception.toString(), contains('https://example.com'));
+    });
+  });
 }
